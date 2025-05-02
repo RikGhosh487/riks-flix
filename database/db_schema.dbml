@@ -1,0 +1,83 @@
+// Rik's Flix Database Schema
+// This file defines the database schema for the Rik's Flix application.
+// It includes tables for movies, actors, directors, and genres.
+// Each table has its own set of fields and relationships with other tables.
+// The schema is designed to support the functionality of the application,
+
+// Docs: https:// dbml.dbdiagram.io/docs
+
+Table movies {
+    id integer [pk, increment]
+    title varchar [not null]
+    release_year integer
+    duration integer [note: 'Duration in minutes']
+    tagline varchar
+    description text
+    rating decimal(3, 1)
+    mpaa_rating varchar
+    poster_url text
+    page_url text
+    page_img_url text
+    trailer_url text
+    slug varchar [unique, note: 'URL-safe version of the title']
+    created_at datetime [default: `now()`]
+    updated_at datetime [default: `now()`]
+    deleted_at datetime [note: 'Soft delete timestamp']
+}
+
+Table genres {
+    id integer [pk, increment]
+    name varchar [not null, unique]
+    slug varchar [unique, note: 'URL-safe version of the genre name']
+    created_at datetime [default: `now()`]
+    updated_at datetime [default: `now()`]
+    deleted_at datetime [note: 'Soft delete timestamp']
+}
+
+Table actors {
+    id integer [pk, increment]
+    name varchar [not null]
+    bio text
+    photo_url text
+    page_url text
+    imdb_url text [note: 'IMDB profile URL']
+    slug varchar [unique, note: 'URL-safe version of the actor name']
+    created_at datetime [default: `now()`]
+    updated_at datetime [default: `now()`]
+    deleted_at datetime [note: 'Soft delete timestamp']
+}
+
+Table directors {
+    id integer [pk, increment]
+    name varchar [not null]
+    bio text
+    photo_url text
+    page_url text
+    imdb_url text [note: 'IMDB profile URL']
+    slug varchar [unique, note: 'URL-safe version of the director name']
+    created_at datetime [default: `now()`]
+    updated_at datetime [default: `now()`]
+    deleted_at datetime [note: 'Soft delete timestamp']
+}
+
+Table movie_genres {
+    movie_id integer [ref: > movies.id, pk]
+    genre_id integer [ref: > genres.id, pk]
+    created_at datetime [default: `now()`]
+    updated_at datetime [default: `now()`]
+}
+
+Table movie_actors {
+    movie_id integer [ref: > movies.id, pk]
+    actor_id integer [ref: > actors.id, pk]
+    created_at datetime [default: `now()`]
+    updated_at datetime [default: `now()`]
+}
+
+Table movie_directors {
+    movie_id integer [ref: > movies.id, pk]
+    director_id integer [ref: > directors.id, pk]
+    created_at datetime [default: `now()`]
+    updated_at datetime [default: `now()`]
+}
+
