@@ -16,13 +16,11 @@ Table movies {
     rating decimal(3, 1)
     mpaa_rating varchar
     poster_url text
-    page_url text
     page_img_url text
     trailer_url text
     slug varchar [unique, note: 'URL-safe version of the title']
     created_at datetime [default: `now()`]
     updated_at datetime [default: `now()`]
-    deleted_at datetime [note: 'Soft delete timestamp']
 }
 
 Table genres {
@@ -31,7 +29,6 @@ Table genres {
     slug varchar [unique, note: 'URL-safe version of the genre name']
     created_at datetime [default: `now()`]
     updated_at datetime [default: `now()`]
-    deleted_at datetime [note: 'Soft delete timestamp']
 }
 
 Table actors {
@@ -44,7 +41,6 @@ Table actors {
     slug varchar [unique, note: 'URL-safe version of the actor name']
     created_at datetime [default: `now()`]
     updated_at datetime [default: `now()`]
-    deleted_at datetime [note: 'Soft delete timestamp']
 }
 
 Table directors {
@@ -57,7 +53,6 @@ Table directors {
     slug varchar [unique, note: 'URL-safe version of the director name']
     created_at datetime [default: `now()`]
     updated_at datetime [default: `now()`]
-    deleted_at datetime [note: 'Soft delete timestamp']
 }
 
 Table movie_genres {
