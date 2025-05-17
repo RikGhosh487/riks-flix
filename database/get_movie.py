@@ -12,10 +12,7 @@ load_dotenv()
 api_key = os.getenv("TMDB_API_KEY")
 api_url = os.getenv("TMDB_API_URL")
 
-headers = {
-    "accept": "application/json",
-    "Authorization": f"Bearer {api_key}"
-}
+headers = {"accept": "application/json", "Authorization": f"Bearer {api_key}"}
 
 
 def search_movie(title: str, year: int = None) -> dict:
@@ -38,7 +35,7 @@ def search_movie(title: str, year: int = None) -> dict:
 
     if not data["results"]:
         return None
-    
+
     # Try to find an exact title match (case-insensitive)
     for movie in data["results"]:
         if movie["title"].lower() == title.lower():
@@ -69,7 +66,10 @@ def search_person(name: str, known_for: str) -> dict:
 
     # Try to find an exact name match (case-insensitive)
     for person in data["results"]:
-        if person["name"].lower() == name.lower() and person["known_for_department"] == known_for:
+        if (
+            person["name"].lower() == name.lower()
+            and person["known_for_department"] == known_for
+        ):
             return person
 
     # If no exact match is found, return the first result
@@ -85,7 +85,10 @@ def get_movie_details(movie_id: int) -> dict:
         dict: A dictionary containing detailed information about the movie.
     """
     url = f"{api_url}/movie/{movie_id}"
-    params = {"language": "en-US", "append_to_response": "credits,images,videos,release_dates"}
+    params = {
+        "language": "en-US",
+        "append_to_response": "credits,images,videos,release_dates",
+    }
     response = requests.get(url, headers=headers, params=params)
 
     return response.json()
@@ -154,7 +157,8 @@ def extract_movie_info(data: dict) -> tuple:
 
     # Get YouTube trailer
     trailers = [
-        video for video in data["videos"]["results"]
+        video
+        for video in data["videos"]["results"]
         if video["site"] == "YouTube" and video["type"] == "Trailer"
     ]
     # trailers_url = f"https://www.youtube.com/watch?v={trailers[0]["key"]}" if trailers else None
@@ -164,13 +168,19 @@ def extract_movie_info(data: dict) -> tuple:
     release_dates = data.get("release_dates", {}).get("results", [{}])
     for release_date in release_dates:
         if release_date.get("iso_3166_1") == "US":  # Check for US release
-            mpaa_rating = release_date.get("release_dates", [{}])[0].get("certification")
+            mpaa_rating = release_date.get("release_dates", [{}])[0].get(
+                "certification"
+            )
             break
 
     # Finalized movie information
     movie_data = {
         "title": data.get("title"),
-        "release_year": int(data.get("release_date", "").split("-")[0]) if data.get("release_date") else None,
+        "release_year": (
+            int(data.get("release_date", "").split("-")[0])
+            if data.get("release_date")
+            else None
+        ),
         "duration": data.get("runtime"),
         "tagline": data.get("tagline"),
         "description": data.get("overview"),
@@ -178,7 +188,9 @@ def extract_movie_info(data: dict) -> tuple:
         "mpaa_rating": mpaa_rating,
         # prefix : https://image.tmdb.org/t/p/original
         "poster_url": data.get("poster_path") if data.get("poster_path") else None,
-        "page_img_url": data.get("backdrop_path") if data.get("backdrop_path") else None,
+        "page_img_url": (
+            data.get("backdrop_path") if data.get("backdrop_path") else None
+        ),
         "trailer_url": trailers_url,
         "slug": create_slug(data.get("title")),
     }
@@ -188,14 +200,15 @@ def extract_movie_info(data: dict) -> tuple:
     genres = data.get("genres", [])
 
     for genre in genres:
-        movie_genres.append({
-            "movie_slug": movie_data["slug"],
-            "genre_slug": create_slug(genre["name"])
-        })
+        movie_genres.append(
+            {"movie_slug": movie_data["slug"], "genre_slug": create_slug(genre["name"])}
+        )
 
     # Get director(s)
     movie_directors = []
-    directors = [crew["name"] for crew in data["credits"]["crew"] if crew["job"] == "Director"]
+    directors = [
+        crew["name"] for crew in data["credits"]["crew"] if crew["job"] == "Director"
+    ]
 
     for director in directors:
         director_slug = create_slug(director)
@@ -207,10 +220,9 @@ def extract_movie_info(data: dict) -> tuple:
 
             directors_map[director_slug] = director_data
 
-        movie_directors.append({
-            "movie_slug": movie_data["slug"],
-            "director_slug": director_slug
-        })
+        movie_directors.append(
+            {"movie_slug": movie_data["slug"], "director_slug": director_slug}
+        )
 
     # Get actor(s) - top 5 cast members
     movie_actors = []
@@ -226,10 +238,9 @@ def extract_movie_info(data: dict) -> tuple:
                 continue
             actors_map[actor_slug] = actor_data
 
-        movie_actors.append({
-            "movie_slug": movie_data["slug"],
-            "actor_slug": actor_slug
-        })
+        movie_actors.append(
+            {"movie_slug": movie_data["slug"], "actor_slug": actor_slug}
+        )
 
     return movie_data, movie_genres, movie_directors, movie_actors
 
@@ -313,16 +324,15 @@ if __name__ == "__main__":
         movie_directors_list.extend(data[2])
         movie_actors_list.extend(data[3])
 
-
     directors_list = list(directors_map.values())
     actors_list = list(actors_map.values())
-    
+
     # Create the JSON file with the movies
     create_json_file("movies.tmp.json", movie_list)
 
     # Create the JSON file with the movie_genres
     create_json_file("movie_genres.tmp.json", movie_genres_list)
-    
+
     # Create the JSON file with the movie_directors
     create_json_file("movie_directors.tmp.json", movie_directors_list)
 

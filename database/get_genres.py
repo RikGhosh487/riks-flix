@@ -13,10 +13,7 @@ api_url = os.getenv("TMDB_API_URL")
 
 url = f"{api_url}/genre/movie/list?language=en-US"
 
-headers = {
-    "accept": "application/json",
-    "Authorization": f"Bearer {api_key}"
-}
+headers = {"accept": "application/json", "Authorization": f"Bearer {api_key}"}
 
 
 response = requests.get(url, headers=headers)
@@ -25,7 +22,7 @@ response_json = response.json()
 
 if response.status_code == 200:
     genres = response_json.get("genres", [])
-    
+
     if genres:
         for genre in genres:
             genre["slug"] = create_slug(genre["name"])
