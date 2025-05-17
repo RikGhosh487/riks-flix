@@ -1,5 +1,7 @@
 import os
+import re
 import json
+import unicodedata
 
 def create_json_file(filename: str, data: list[dict]) -> None:
     """
@@ -35,10 +37,19 @@ def create_slug(title: str) -> str:
         str: The slugified version of the title.
     """
     
-    # Remove special characters and replace spaces with hyphens
-    slug = title.lower().replace(" ", "-").replace("'", "").replace("\"", "")
-    
-    # Remove any remaining special characters
-    slug = "".join(e for e in slug if e.isalnum() or e == "-")
-    
-    return slug
+    # Normalize the strng to remove accents and special characters
+    title = unicodedata.normalize("NFKD", title).encode("ascii", "ignore").decode("utf-8")
+
+    # Convert to lowercase and strip whitespace
+    title = title.strip().lower()
+
+    # Replace spaces and conesecutive whitespace with a single hyphen
+    title = re.sub(r"\s+", "-", title)
+
+    # Remove any non-alphanumeric characters (except hyphens)
+    title = re.sub(r"[^\w-]", "", title)
+
+    # Remove leading and trailing hyphens
+    title = title.strip("-")
+
+    return title
