@@ -1,5 +1,5 @@
 from app_init import db
-from .associations import movie_genres, movie_actors, movie_directors
+from models.associations import movie_genres, movie_actors, movie_directors
 
 
 # Movies model
