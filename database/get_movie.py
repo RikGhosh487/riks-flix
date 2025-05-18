@@ -168,19 +168,18 @@ def extract_movie_info(data: dict) -> tuple:
     release_dates = data.get("release_dates", {}).get("results", [{}])
     for release_date in release_dates:
         if release_date.get("iso_3166_1") == "US":  # Check for US release
-            mpaa_rating = release_date.get("release_dates", [{}])[0].get(
-                "certification"
-            )
+            for date in release_date.get("release_dates", []):
+                if date.get("certification") != "":
+                    mpaa_rating = date["certification"]
+                    break
             break
+
+    release_year = int(data.get("release_date", "").split("-")[0]) if data.get("release_date") else None
 
     # Finalized movie information
     movie_data = {
         "title": data.get("title"),
-        "release_year": (
-            int(data.get("release_date", "").split("-")[0])
-            if data.get("release_date")
-            else None
-        ),
+        "release_year": release_year,
         "duration": data.get("runtime"),
         "tagline": data.get("tagline"),
         "description": data.get("overview"),
@@ -192,7 +191,7 @@ def extract_movie_info(data: dict) -> tuple:
             data.get("backdrop_path") if data.get("backdrop_path") else None
         ),
         "trailer_url": trailers_url,
-        "slug": create_slug(data.get("title")),
+        "slug": create_slug(data.get("title"), context={"year": release_year}),
     }
 
     # Get genres

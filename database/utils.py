@@ -26,30 +26,38 @@ def create_json_file(filename: str, data: list[dict]) -> None:
         json.dump(data, json_file, indent=4)
 
 
-def create_slug(title: str) -> str:
+def slugify(text: str) -> str:
+    """
+    Convert a string to a URL-friendly slug.
+    Args:
+        text (str): The string to be converted to a slug.
+    Returns:
+        str: The slugified version of the string.
+    """
+    # Normalize the string to remove accents and special characters
+    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("utf-8")
+    text = text.strip().lower()     # Convert to lowercase and strip whitespace
+    text = re.sub(r"[^a-z0-9]+", "-", text)  # Replace spaces and consecutive whitespace with a single hyphen
+    text = re.sub(r"-+", "-", text)  # Replace consecutive hyphens with a single hyphen
+    text = re.sub(r"^-|-$", "", text)  # Remove leading and trailing hyphens
+    return text
+
+
+def create_slug(base: str, context: dict = None) -> str:
     """
     Create a slug from the given title.
-    
     Args:
-        title (str): The title to be converted to a slug.
-        
+        base (str): The title to be slugified.
+        context (dict, optional): Additional context for slug creation. Defaults to None.
     Returns:
         str: The slugified version of the title.
     """
-    
-    # Normalize the strng to remove accents and special characters
-    title = unicodedata.normalize("NFKD", title).encode("ascii", "ignore").decode("utf-8")
+    slug_parts = [slugify(base)]
 
-    # Convert to lowercase and strip whitespace
-    title = title.strip().lower()
+    if context:
+        for _, val in context.items():
+            slug_parts.append(slugify(val if isinstance(val, str) else str(val)))
 
-    # Replace spaces and conesecutive whitespace with a single hyphen
-    title = re.sub(r"\s+", "-", title)
+    slug = "-".join(slug_parts)
 
-    # Remove any non-alphanumeric characters (except hyphens)
-    title = re.sub(r"[^\w-]", "", title)
-
-    # Remove leading and trailing hyphens
-    title = title.strip("-")
-
-    return title
+    return slug
