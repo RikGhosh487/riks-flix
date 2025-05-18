@@ -199,16 +199,14 @@ def extract_movie_info(data: dict) -> tuple:
     }
 
     # Get genres
-    movie_genres = []
+    movie_genres = {"movie_slug": movie_data["slug"], "genre_slugs": []}
     genres = data.get("genres", [])
 
     for genre in genres:
-        movie_genres.append(
-            {"movie_slug": movie_data["slug"], "genre_slug": create_slug(genre["name"])}
-        )
+        movie_genres["genre_slugs"].append(create_slug(genre["name"]))
 
     # Get director(s)
-    movie_directors = []
+    movie_directors = {"movie_slug": movie_data["slug"], "director_slugs": []}
     directors = [
         crew["name"] for crew in data["credits"]["crew"] if crew["job"] == "Director"
     ]
@@ -223,12 +221,10 @@ def extract_movie_info(data: dict) -> tuple:
 
             directors_map[director_slug] = director_data
 
-        movie_directors.append(
-            {"movie_slug": movie_data["slug"], "director_slug": director_slug}
-        )
+        movie_directors["director_slugs"].append(director_slug)
 
     # Get actor(s) - top 5 cast members
-    movie_actors = []
+    movie_actors = {"movie_slug": movie_data["slug"], "actor_slugs": []}
     cast = [actor["name"] for actor in data["credits"]["cast"][:5]]
 
     for actor in cast:
@@ -241,9 +237,7 @@ def extract_movie_info(data: dict) -> tuple:
                 continue
             actors_map[actor_slug] = actor_data
 
-        movie_actors.append(
-            {"movie_slug": movie_data["slug"], "actor_slug": actor_slug}
-        )
+        movie_actors["actor_slugs"].append(actor_slug)
 
     return movie_data, movie_genres, movie_directors, movie_actors
 
@@ -323,9 +317,9 @@ if __name__ == "__main__":
             continue
 
         movie_list.append(data[0])
-        movie_genres_list.extend(data[1])
-        movie_directors_list.extend(data[2])
-        movie_actors_list.extend(data[3])
+        movie_genres_list.append(data[1])
+        movie_directors_list.append(data[2])
+        movie_actors_list.append(data[3])
 
     directors_list = list(directors_map.values())
     actors_list = list(actors_map.values())
