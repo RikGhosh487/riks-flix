@@ -1,4 +1,5 @@
 from app_init import db
+from .associations import movie_genres, movie_actors, movie_directors
 
 
 # Movies model
@@ -30,6 +31,11 @@ class Movie(db.Model):
     updated_at = db.Column(
         db.DateTime, server_default=db.func.now(), onupdate=db.func.now()
     )
+
+    # relationships
+    genres = db.relationship("Genre", secondary=movie_genres, backref="movies")
+    actors = db.relationship("Actor", secondary=movie_actors, backref="movies")
+    directors = db.relationship("Director", secondary=movie_directors, backref="movies")
 
     def __init__(
         self,
