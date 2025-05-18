@@ -7,4 +7,5 @@ marshmallow>=4.0.0  # object serialization and deserialization
 marshmallow-sqlalchemy>=1.4.2   # SQLAlchemy integration with marshmallow
 flask-marshmallow>=1.3.0    # integration layer for Flask and marshmallow
 psycopg2>=2.9.10    # PostgreSQL database adapter
+dotenv>=0.9.9   # loads environment variables from .env file
 black>=25.1.0   # code formatter
