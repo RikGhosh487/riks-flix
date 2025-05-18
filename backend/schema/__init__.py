@@ -1,0 +1,1 @@
+from .movies_schema import movie_schema, movies_schema
