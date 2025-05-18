@@ -3,10 +3,11 @@ import re
 import json
 import unicodedata
 
+
 def create_json_file(filename: str, data: list[dict]) -> None:
     """
     Create a JSON file at the specified path with the given data.
-    
+
     Args:
         filename (str): The name of the JSON file to be created.
         data (list[dict]): The data to be written to the JSON file.
@@ -36,8 +37,10 @@ def slugify(text: str) -> str:
     """
     # Normalize the string to remove accents and special characters
     text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("utf-8")
-    text = text.strip().lower()     # Convert to lowercase and strip whitespace
-    text = re.sub(r"[^a-z0-9]+", "-", text)  # Replace spaces and consecutive whitespace with a single hyphen
+    text = text.strip().lower()  # Convert to lowercase and strip whitespace
+    text = re.sub(
+        r"[^a-z0-9]+", "-", text
+    )  # Replace spaces and consecutive whitespace with a single hyphen
     text = re.sub(r"-+", "-", text)  # Replace consecutive hyphens with a single hyphen
     text = re.sub(r"^-|-$", "", text)  # Remove leading and trailing hyphens
     return text

@@ -174,7 +174,11 @@ def extract_movie_info(data: dict) -> tuple:
                     break
             break
 
-    release_year = int(data.get("release_date", "").split("-")[0]) if data.get("release_date") else None
+    release_year = (
+        int(data.get("release_date", "").split("-")[0])
+        if data.get("release_date")
+        else None
+    )
 
     # Finalized movie information
     movie_data = {
