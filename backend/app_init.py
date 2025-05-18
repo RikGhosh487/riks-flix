@@ -13,15 +13,18 @@ app = Flask(__name__)
 base_dir = os.path.abspath(os.path.dirname(__file__))
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DB_URI")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-CORS(app) # Enable CORS for all routes
+CORS(app)  # Enable CORS for all routes
+
 
 # initialize the database
 def init_database(app: Flask) -> SQLAlchemy:
     return SQLAlchemy(app)
 
+
 # initialize marshmallow
 def init_marshmallow(app: Flask) -> Marshmallow:
     return Marshmallow(app)
+
 
 # exported objects from __file__
 db = init_database(app)

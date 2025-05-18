@@ -1,6 +1,7 @@
 from app_init import ma
 from models.movies import Movie
 
+
 # Movie Schema
 class MovieSchema(ma.Schema):
     class Meta:
@@ -17,9 +18,10 @@ class MovieSchema(ma.Schema):
             "poster_url",
             "page_img_url",
             "trailer_url",
-            "slug"
+            "slug",
         )
         ordered = True
+
 
 # Movies Schema
 class MoviesSchema(ma.Schema):
@@ -33,9 +35,10 @@ class MoviesSchema(ma.Schema):
             "rating",
             "mpaa_rating",
             "poster_url",
-            "slug"
+            "slug",
         )
         ordered = True
+
 
 movie_schema = MovieSchema()
 movies_schema = MoviesSchema(many=True)
