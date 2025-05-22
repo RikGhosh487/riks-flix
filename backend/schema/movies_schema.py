@@ -3,9 +3,11 @@ from models.movies import Movie
 
 
 # Movie Schema
-class MovieSchema(ma.Schema):
+class MovieSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Movie
+        load_instance = True
+        include_relationship = True
         fields = (
             "id",
             "title",
@@ -24,9 +26,10 @@ class MovieSchema(ma.Schema):
 
 
 # Movies Schema
-class MoviesSchema(ma.Schema):
+class MoviesSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Movie
+        load_instance = True
         fields = (
             "id",
             "title",

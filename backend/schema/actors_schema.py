@@ -3,9 +3,11 @@ from models.actors import Actor
 
 
 # Actor Schema
-class ActorSchema(ma.Schema):
+class ActorSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Actor
+        load_instance = True
+        include_relationships = True
         fields = (
             "id",
             "name",
@@ -18,9 +20,10 @@ class ActorSchema(ma.Schema):
 
 
 # Actors Schema
-class ActorsSchema(ma.Schema):
+class ActorsSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Actor
+        load_instance = True
         fields = (
             "id",
             "name",

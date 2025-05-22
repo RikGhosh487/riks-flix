@@ -3,9 +3,11 @@ from models.directors import Director
 
 
 # Director Schema
-class DirectorSchema(ma.Schema):
+class DirectorSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Director
+        load_instance = True
+        include_relationships = True
         fields = (
             "id",
             "name",
@@ -18,9 +20,10 @@ class DirectorSchema(ma.Schema):
 
 
 # Directors Schema
-class DirectorsSchema(ma.Schema):
+class DirectorsSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Director
+        load_instance = True
         fields = (
             "id",
             "name",
