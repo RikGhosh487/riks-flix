@@ -9,6 +9,8 @@ from utils import (
     query_by_id,
     query_relations_by_id,
     parse_sort_parameters,
+    parse_exact_filters,
+    apply_exact_filters,
     parse_pagination_parameters,
 )
 
@@ -25,6 +27,11 @@ def get_movies() -> dict:
         dict: A dictionary containing the status and data of the query.
     """
 
+    EXACT_FILTERS = [
+        Movie.release_year,
+        Movie.mpaa_rating,
+    ]
+
     SORT_FIELDS = [
         Movie.title,
         Movie.release_year,
@@ -34,8 +41,10 @@ def get_movies() -> dict:
 
     page_info = parse_pagination_parameters(request.args)
     sort_info = parse_sort_parameters(request.args, SORT_FIELDS)
+    exact_filters = parse_exact_filters(request.args, EXACT_FILTERS)
 
     base_query = Movie.query
+    base_query = apply_exact_filters(base_query, exact_filters)
 
     base_query = base_query.order_by(
         sort_info if sort_info is not None else Movie.id, Movie.id

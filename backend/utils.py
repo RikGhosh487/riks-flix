@@ -1,6 +1,7 @@
 import sys
 from enum import Enum
 from app_init import db
+from flask_sqlalchemy.query import Query
 
 
 class Pagination:
@@ -148,3 +149,41 @@ def parse_sort_parameters(request_args, sort_fields):
     if ascending:
         return chosen_field.asc()
     return chosen_field.desc()
+
+
+def parse_exact_filters(request_args, exact_filters) -> dict:
+    """
+    Parse exact filter parameters from request arguments.
+
+    Args:
+        request_args (dict): The request arguments containing filter parameters.
+        exact_filters (list): A list of valid fields to filter by.
+
+    Returns:
+        dict: A dictionary containing the exact filters.
+    """
+
+    filters = dict()
+    for filter_field in exact_filters:
+        value = request_args.get(filter_field.name)
+        if value is not None:
+            filters[filter_field] = value
+
+    return filters
+
+
+def apply_exact_filters(query, filters) -> Query:
+    """
+    Apply exact filters to a SQLAlchemy query.
+
+    Args:
+        query (SQLAlchemy Query): The SQLAlchemy query to apply filters to.
+        filters (dict): A dictionary containing the filters to apply.
+
+    Returns:
+        SQLAlchemy Query: The modified query with applied filters.
+    """
+    for field, value in filters.items():
+        query = query.filter(field == value)
+
+    return query
