@@ -1,10 +1,15 @@
-from flask import Blueprint
 from models.movies import Movie
+from flask import Blueprint, request
 from schema.genres_schema import genres_schema
 from schema.actors_schema import actors_schema
 from schema.directors_schema import directors_schema
 from schema.movies_schema import movies_schema, movie_schema
-from utils import query_pages, query_by_id, query_relations_by_id
+from utils import (
+    query_pages,
+    query_by_id,
+    query_relations_by_id,
+    parse_pagination_parameters,
+)
 
 
 movies = Blueprint("movies", __name__)
@@ -12,9 +17,18 @@ movies = Blueprint("movies", __name__)
 
 @movies.route("/movies", methods=["GET"])
 def get_movies() -> dict:
+    """
+    Get a list of movies with pagination.
+
+    Returns:
+        dict: A dictionary containing the status and data of the query.
+    """
+
+    page_info = parse_pagination_parameters(request.args)
+
     base_query = Movie.query
 
-    result = query_pages(base_query, movies_schema)
+    result = query_pages(base_query, movies_schema, page_info)
 
     if result["status"] == "success":
         result["data"]["movies"] = result["data"].pop("instances")

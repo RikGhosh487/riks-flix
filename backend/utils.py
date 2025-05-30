@@ -1,6 +1,12 @@
 import sys
-from app_init import db
 from enum import Enum
+from app_init import db
+
+
+class Pagination:
+    def __init__(self, page, per_page) -> None:
+        self.page = page
+        self.per_page = per_page
 
 
 class Status(Enum):
@@ -10,10 +16,21 @@ class Status(Enum):
     NOT_FOUND = {"status": "fail", "code": 404}
 
 
-def query_pages(query, schema) -> dict:
+def query_pages(query, schema, pagination: Pagination) -> dict:
+    """
+    Paginate a SQLAlchemy query and serialize the results using the provided schema.
+
+    Args:
+        query (SQLAlchemy Query): The SQLAlchemy query to paginate.
+        schema (Marshmallow Schema): The schema to serialize the results.
+        pagination (Pagination): An instance of Pagination containing page and per_page values.
+
+    Returns:
+        dict: A dictionary containing the status and paginated data.
+    """
     # make a SQL query
     try:
-        results = db.paginate(query, per_page=100)
+        results = db.paginate(query, page=pagination.page, per_page=pagination.per_page)
         instances = schema.dump(results.items, many=True)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
@@ -21,7 +38,12 @@ def query_pages(query, schema) -> dict:
 
     return {
         **Status.SUCCESS.value,
-        "data": {"instances": instances, "total": results.total},
+        "data": {
+            "instances": instances,
+            "total": results.total,
+            "page": pagination.page,
+            "per_page": pagination.per_page,
+        },
     }
 
 
@@ -61,3 +83,19 @@ def query_relations_by_id(model, id, relation_name, relation_schema) -> dict:
         **Status.SUCCESS.value,
         "data": {relation_name: instances},
     }
+
+
+def parse_pagination_parameters(request_args) -> Pagination:
+    """
+    Parse pagination parameters from request arguments.
+
+    Args:
+        request_args (dict): The request arguments containing pagination parameters.
+
+    Returns:
+        Pagination: An instance of Pagination with parsed page and per_page values.
+    """
+    page = int(request_args.get("page", 1))
+    per_page = int(request_args.get("per_page", 10))
+
+    return Pagination(page, per_page)
