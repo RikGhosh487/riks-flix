@@ -1,7 +1,12 @@
 from models.actors import Actor
 from flask import Blueprint, request
 from schema.actors_schema import actors_schema, actor_schema
-from utils import query_pages, query_by_id, parse_pagination_parameters
+from utils import (
+    query_pages,
+    query_by_id,
+    parse_sort_parameters,
+    parse_pagination_parameters,
+)
 
 actors = Blueprint("actors", __name__)
 
@@ -15,9 +20,18 @@ def get_actors() -> dict:
         dict: A dictionary containing the status and data of the query.
     """
 
+    SORT_FIELDS = [
+        Actor.name,
+    ]
+
     page_info = parse_pagination_parameters(request.args)
+    sort_info = parse_sort_parameters(request.args, SORT_FIELDS)
 
     base_query = Actor.query
+
+    base_query = base_query.order_by(
+        sort_info if sort_info is not None else Actor.id, Actor.id
+    )
 
     result = query_pages(base_query, actors_schema, page_info)
 

@@ -48,6 +48,17 @@ def query_pages(query, schema, pagination: Pagination) -> dict:
 
 
 def query_by_id(model, id, schema) -> dict:
+    """
+    Query a single instance by its ID and serialize it using the provided schema.
+
+    Args:
+        model (SQLAlchemy Model): The SQLAlchemy model to query.
+        id (str): The ID of the instance to query.
+        schema (Marshmallow Schema): The schema to serialize the instance.
+
+    Returns:
+        dict: A dictionary containing the status and data of the query.
+    """
     try:
         int_id = int(id)
         instance = schema.dump(model.query.get(int_id))
@@ -62,6 +73,18 @@ def query_by_id(model, id, schema) -> dict:
 
 
 def query_relations_by_id(model, id, relation_name, relation_schema) -> dict:
+    """
+    Query a relation of a model by its ID and serialize it using the provided schema.
+
+    Args:
+        model (SQLAlchemy Model): The SQLAlchemy model to query.
+        id (str): The ID of the instance to query.
+        relation_name (str): The name of the relation to fetch.
+        relation_schema (Marshmallow Schema): The schema to serialize the relation instances.
+
+    Returns:
+        dict: A dictionary containing the status and data of the relation query.
+    """
     try:
         int_id = int(id)
         instance = model.query.get(int_id)
@@ -99,3 +122,29 @@ def parse_pagination_parameters(request_args) -> Pagination:
     per_page = int(request_args.get("per_page", 10))
 
     return Pagination(page, per_page)
+
+
+def parse_sort_parameters(request_args, sort_fields):
+    """
+    Parse sorting parameters from request arguments.
+
+    Args:
+        request_args (dict): The request arguments containing sorting parameters.
+        sort_fields (list): A list of valid fields to sort by.
+
+    Returns:
+        SQLAlchemy Sort Expression or None: The sort expression if valid, otherwise None.
+    """
+    sort_by = request_args.get("sort_by")
+    if not sort_by:
+        return None
+
+    ascending = request_args.get("ascending", "true").lower() == "true"
+    chosen_field = next(filter(lambda field: field.name == sort_by, sort_fields), None)
+
+    if not chosen_field:
+        return None
+
+    if ascending:
+        return chosen_field.asc()
+    return chosen_field.desc()

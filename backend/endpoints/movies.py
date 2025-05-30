@@ -8,6 +8,7 @@ from utils import (
     query_pages,
     query_by_id,
     query_relations_by_id,
+    parse_sort_parameters,
     parse_pagination_parameters,
 )
 
@@ -24,9 +25,21 @@ def get_movies() -> dict:
         dict: A dictionary containing the status and data of the query.
     """
 
+    SORT_FIELDS = [
+        Movie.title,
+        Movie.release_year,
+        Movie.duration,
+        Movie.rating,
+    ]
+
     page_info = parse_pagination_parameters(request.args)
+    sort_info = parse_sort_parameters(request.args, SORT_FIELDS)
 
     base_query = Movie.query
+
+    base_query = base_query.order_by(
+        sort_info if sort_info is not None else Movie.id, Movie.id
+    )
 
     result = query_pages(base_query, movies_schema, page_info)
 
