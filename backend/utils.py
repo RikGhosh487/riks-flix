@@ -187,3 +187,69 @@ def apply_exact_filters(query, filters) -> Query:
         query = query.filter(field == value)
 
     return query
+
+
+def parse_range_filters(request_args, range_filters) -> dict:
+    """
+    Parse range filter parameters from request arguments.
+
+    Args:
+        request_args (dict): The request arguments containing filter parameters.
+        range_filters (list): A list of valid fields to filter by.
+
+    Returns:
+        dict: A dictionary containing the range filters.
+    """
+    filters = dict()
+    for filter_field in range_filters:
+        min_value = request_args.get(f"{filter_field.name}_min")
+        max_value = request_args.get(f"{filter_field.name}_max")
+
+        if min_value is not None or max_value is not None:
+            filters[filter_field] = (min_value, max_value)
+
+    return filters
+
+
+def apply_range_filters(query, filters) -> Query:
+    """
+    Apply range filters to a SQLAlchemy query.
+
+    Args:
+        query (SQLAlchemy Query): The SQLAlchemy query to apply filters to.
+        filters (dict): A dictionary containing the range filters to apply.
+
+    Returns:
+        SQLAlchemy Query: The modified query with applied range filters.
+    """
+    for field, (min_value, max_value) in filters.items():
+        if min_value is not None and max_value is not None:
+            query = query.filter(field.between(min_value, max_value))
+        elif min_value is not None:
+            query = query.filter(field >= min_value)
+        elif max_value is not None:
+            query = query.filter(field <= max_value)
+
+    return query
+
+
+def apply_search_filters(query, search_term, search_fields) -> Query:
+    """
+    Apply search filters to a SQLAlchemy query.
+
+    Args:
+        query (SQLAlchemy Query): The SQLAlchemy query to apply search filters to.
+        search_term (str): The search term to filter by.
+        search_fields (list): A list of valid fields to search by.
+
+    Returns:
+        SQLAlchemy Query: The modified query with applied search filters.
+    """
+    if not search_term:
+        return query
+
+    # Apply the search filter to the query
+    for field in search_fields:
+        query = query.filter(field.ilike(f"%{search_term}%"))
+
+    return query

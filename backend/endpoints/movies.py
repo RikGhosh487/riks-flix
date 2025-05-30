@@ -7,10 +7,13 @@ from schema.movies_schema import movies_schema, movie_schema
 from utils import (
     query_pages,
     query_by_id,
-    query_relations_by_id,
-    parse_sort_parameters,
     parse_exact_filters,
     apply_exact_filters,
+    parse_range_filters,
+    apply_range_filters,
+    apply_search_filters,
+    parse_sort_parameters,
+    query_relations_by_id,
     parse_pagination_parameters,
 )
 
@@ -32,6 +35,16 @@ def get_movies() -> dict:
         Movie.mpaa_rating,
     ]
 
+    RANGE_FILTERS = [
+        Movie.duration,
+        Movie.release_year,
+        Movie.rating,
+    ]
+
+    SEARCH_FIELDS = [
+        Movie.title,
+    ]
+
     SORT_FIELDS = [
         Movie.title,
         Movie.release_year,
@@ -42,10 +55,14 @@ def get_movies() -> dict:
     page_info = parse_pagination_parameters(request.args)
     sort_info = parse_sort_parameters(request.args, SORT_FIELDS)
     exact_filters = parse_exact_filters(request.args, EXACT_FILTERS)
+    range_filters = parse_range_filters(request.args, RANGE_FILTERS)
+    search_info = request.args.get("search", None)
 
     base_query = Movie.query
+    if search_info is not None:
+        base_query = apply_search_filters(base_query, search_info, SEARCH_FIELDS)
     base_query = apply_exact_filters(base_query, exact_filters)
-
+    base_query = apply_range_filters(base_query, range_filters)
     base_query = base_query.order_by(
         sort_info if sort_info is not None else Movie.id, Movie.id
     )

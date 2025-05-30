@@ -4,6 +4,7 @@ from schema.actors_schema import actors_schema, actor_schema
 from utils import (
     query_pages,
     query_by_id,
+    apply_search_filters,
     parse_sort_parameters,
     parse_pagination_parameters,
 )
@@ -20,15 +21,21 @@ def get_actors() -> dict:
         dict: A dictionary containing the status and data of the query.
     """
 
+    SEARCH_FIELDS = [
+        Actor.name,
+    ]
+
     SORT_FIELDS = [
         Actor.name,
     ]
 
     page_info = parse_pagination_parameters(request.args)
     sort_info = parse_sort_parameters(request.args, SORT_FIELDS)
+    search_info = request.args.get("search", None)
 
     base_query = Actor.query
-
+    if search_info is not None:
+        base_query = apply_search_filters(base_query, search_info, SEARCH_FIELDS)
     base_query = base_query.order_by(
         sort_info if sort_info is not None else Actor.id, Actor.id
     )

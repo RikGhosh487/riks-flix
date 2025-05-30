@@ -4,6 +4,7 @@ from schema.directors_schema import directors_schema, director_schema
 from utils import (
     query_pages,
     query_by_id,
+    apply_search_filters,
     parse_sort_parameters,
     parse_pagination_parameters,
 )
@@ -20,15 +21,21 @@ def get_actors() -> dict:
         dict: A dictionary containing the status and data of the query.
     """
 
+    SEARCH_FIELD = [
+        Director.name,
+    ]
+
     SORT_FIELD = [
         Director.name,
     ]
 
     page_info = parse_pagination_parameters(request.args)
     sort_info = parse_sort_parameters(request.args, SORT_FIELD)
+    search_field = request.args.get("search", None)
 
     base_query = Director.query
-
+    if search_field is not None:
+        base_query = apply_search_filters(base_query, search_field, SEARCH_FIELD)
     base_query = base_query.order_by(
         sort_info if sort_info is not None else Director.id, Director.id
     )
