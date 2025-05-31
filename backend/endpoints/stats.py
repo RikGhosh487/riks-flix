@@ -5,8 +5,9 @@ from flask import Blueprint
 from models.movies import Movie
 from models.actors import Actor
 from models.genres import Genre
-from sqlalchemy import func, case
+from collections import defaultdict
 from models.directors import Director
+from sqlalchemy import func, case, distinct
 from models.associations import movie_genres, movie_actors, movie_directors
 
 stats = Blueprint("stats", __name__)
@@ -261,6 +262,52 @@ def fetch_highest_avg_rated_directors(limit: int = 10):
     ]
 
 
+def fetch_most_common_genres(limit: int = 10):
+    """
+    Fetch the most common genres in the database.
+
+    Args:
+        limit (int): Number of top genres to fetch. Defaults to 10.
+
+    Returns:
+        list: A list of dictionaries containing genre details and their movie counts.
+    """
+    return [
+        {"name": name, "count": count}
+        for name, count in db.session.query(
+            Genre.name, func.count(movie_genres.c.movie_id)
+        )
+        .join(movie_genres, Genre.id == movie_genres.c.genre_id)
+        .group_by(Genre.id)
+        .order_by(func.count(movie_genres.c.movie_id).desc())
+        .limit(limit)
+        .all()
+    ]
+
+
+def fetch_popularity_over_time():
+    """
+    Fetch the popularity of genres over time.
+
+    Returns:
+        dict: A dictionary with years as keys and genre counts as values.
+    """
+    genre_popularity = (
+        db.session.query(Genre.name, Movie.release_year, func.count(Movie.id))
+        .join(movie_genres, Genre.id == movie_genres.c.genre_id)
+        .join(Movie, movie_genres.c.movie_id == Movie.id)
+        .group_by(Genre.name, Movie.release_year)
+        .order_by(Genre.name, Movie.release_year)
+        .all()
+    )
+
+    popularity_by_genre = defaultdict(dict)
+    for genre, year, count in genre_popularity:
+        popularity_by_genre[genre][year] = count
+
+    return popularity_by_genre
+
+
 def fetch_movie_stats():
     """
     Fetch statistics about movies
@@ -350,6 +397,43 @@ def fetch_director_stats():
         return None
 
 
+def fetch_genre_stats():
+    """
+    Fetch statistics about genres.
+
+    Returns:
+        dict: A dictionary containing various genre statistics.
+    """
+    try:
+        return {
+            "total": (
+                db.session.query(func.count(distinct(Genre.id)))
+                .join(movie_genres, Genre.id == movie_genres.c.genre_id)
+                .join(Movie, movie_genres.c.movie_id == Movie.id)
+                .scalar()
+            ),
+            "most_common": fetch_most_common_genres(5),
+            "popularity_over_time": fetch_popularity_over_time(),
+            "average_rating": (
+                {
+                    name: round(float(avg), 2)
+                    for name, avg in (
+                        db.session.query(Genre.name, func.avg(Movie.rating))
+                        .join(movie_genres, Genre.id == movie_genres.c.genre_id)
+                        .join(Movie, movie_genres.c.movie_id == Movie.id)
+                        .filter(Movie.rating != None)
+                        .group_by(Genre.name)
+                        .order_by(Genre.name)
+                        .all()
+                    )
+                }
+            ),
+        }
+    except Exception as e:
+        print(f"Error fetching genre stats: {e}", file=sys.stderr)
+        return None
+
+
 @stats.route("/stats", methods=["GET"])
 def get_stats():
     """Get statistics about movies, actors, genres, and directors in the database.
@@ -362,6 +446,7 @@ def get_stats():
     movie_stats = fetch_movie_stats()
     actor_stats = fetch_actor_stats()
     director_stats = fetch_director_stats()
+    genre_stats = fetch_genre_stats()
 
     if movie_stats:
         stats["movie_stats"] = movie_stats
@@ -369,7 +454,10 @@ def get_stats():
         stats["actor_stats"] = actor_stats
     if director_stats:
         stats["director_stats"] = director_stats
+    if genre_stats:
+        stats["genre_stats"] = genre_stats
 
+    # if not stats were fetched return an error message
     if not stats:
         return {
             **Status.ERROR.value,
