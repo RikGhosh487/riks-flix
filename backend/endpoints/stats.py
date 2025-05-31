@@ -182,6 +182,85 @@ def format_longest_career_actor(actor):
     )
 
 
+def fetch_most_prolific_directors(limit: int = 10):
+    """
+    Fetch the most prolific directors based on the number of movies directed.
+
+    Args:
+        limit (int): Number of top directors to fetch. Defaults to 10.
+
+    Returns:
+        list: A list of dictionaries containing director details and their movie counts.
+    """
+    return [
+        {
+            "name": director.name,
+            "movie_count": count,
+            "id": director.id,
+            "slug": director.slug,
+            "photo_url": director.photo_url,
+        }
+        for director, count in db.session.query(
+            Director, func.count(movie_directors.c.movie_id).label("movie_count")
+        )
+        .join(movie_directors, Director.id == movie_directors.c.director_id)
+        .group_by(Director.id)
+        .order_by(func.count(movie_directors.c.movie_id).desc())
+        .limit(limit)
+        .all()
+    ]
+
+
+def fetch_highest_avg_rated_directors(limit: int = 10):
+    """
+    Fetch directors with the highest average movie ratings.
+
+    Args:
+        limit (int): Number of top directors to fetch. Defaults to 10.
+
+    Returns:
+        list: A list of dictionaries containing director details and their average ratings.
+    """
+    subq = (
+        db.session.query(
+            Director.id,
+            Director.name,
+            Director.slug,
+            Director.photo_url,
+            func.avg(Movie.rating).label("avg_rating"),
+            func.count(Movie.id).label("movie_count"),
+        )
+        .join(movie_directors, Director.id == movie_directors.c.director_id)
+        .join(Movie, movie_directors.c.movie_id == Movie.id)
+        .filter(Movie.rating != None)
+        .group_by(Director.id)
+        .having(func.count(Movie.id) >= 3)
+        .subquery()
+    )
+
+    return [
+        {
+            "name": name,
+            "avg_rating": round(float(avg_rating), 2),
+            "movie_count": movie_count,
+            "id": id,
+            "slug": slug,
+            "photo_url": photo_url,
+        }
+        for name, avg_rating, movie_count, id, slug, photo_url in db.session.query(
+            subq.c.name,
+            subq.c.avg_rating,
+            subq.c.movie_count,
+            subq.c.id,
+            subq.c.slug,
+            subq.c.photo_url,
+        )
+        .order_by(subq.c.avg_rating.desc())
+        .limit(limit)
+        .all()
+    ]
+
+
 def fetch_movie_stats():
     """
     Fetch statistics about movies
@@ -253,6 +332,24 @@ def fetch_actor_stats():
         return None
 
 
+def fetch_director_stats():
+    """
+    Fetch statistics about directors.
+
+    Returns:
+        dict: A dictionary containing various director statistics.
+    """
+    try:
+        return {
+            "total": db.session.query(func.count(Director.id)).scalar(),
+            "most_prolific": fetch_most_prolific_directors(),
+            "highest_avg_rated": fetch_highest_avg_rated_directors(),
+        }
+    except Exception as e:
+        print(f"Error fetching director stats: {e}", file=sys.stderr)
+        return None
+
+
 @stats.route("/stats", methods=["GET"])
 def get_stats():
     """Get statistics about movies, actors, genres, and directors in the database.
@@ -264,7 +361,7 @@ def get_stats():
 
     movie_stats = fetch_movie_stats()
     actor_stats = fetch_actor_stats()
-    director_stats = dict()
+    director_stats = fetch_director_stats()
 
     if movie_stats:
         stats["movie_stats"] = movie_stats
