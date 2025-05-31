@@ -1,10 +1,12 @@
 import os
 from app_init import app
+from endpoints.stats import stats
 from endpoints.movies import movies
 from endpoints.actors import actors
 from endpoints.directors import directors
 
 # Register all blueprints
+app.register_blueprint(stats, url_prefix="/api/v1")
 app.register_blueprint(movies, url_prefix="/api/v1")
 app.register_blueprint(actors, url_prefix="/api/v1")
 app.register_blueprint(directors, url_prefix="/api/v1")
