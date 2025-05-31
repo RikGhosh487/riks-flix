@@ -103,9 +103,91 @@ def fetch_avg_rating_by_year():
     }
 
 
+def fetch_actor_career_spans():
+    """
+    Fetch the career spans of actors.
+
+    Returns:
+        list: A list of Actor instances with their career spans.
+    """
+    return (
+        db.session.query(
+            Actor.id,
+            Actor.name,
+            Actor.photo_url,
+            Actor.slug,
+            func.min(Movie.release_year).label("first_year"),
+            func.max(Movie.release_year).label("last_year"),
+        )
+        .join(movie_actors, Actor.id == movie_actors.c.actor_id)
+        .join(Movie, movie_actors.c.movie_id == Movie.id)
+        .group_by(Actor.id)
+        .having(func.count(Movie.id) > 1)
+        .all()
+    )
+
+
+def fetch_most_frequent_actors(limit: int = 10):
+    """
+    Fetch the most frequently appearing actors in movies.
+
+    Args:
+        limit (int): Number of top actors to fetch. Defaults to 10.
+
+    Returns:
+        list: A list of dictionaries containing actor details and their movie counts.
+    """
+    return [
+        {
+            "name": actor.name,
+            "movie_count": count,
+            "id": actor.id,
+            "slug": actor.slug,
+            "photo_url": actor.photo_url,
+        }
+        for actor, count in db.session.query(
+            Actor, func.count(movie_actors.c.movie_id).label("movie_count")
+        )
+        .join(movie_actors, Actor.id == movie_actors.c.actor_id)
+        .group_by(Actor.id)
+        .order_by(func.count(movie_actors.c.movie_id).desc())
+        .limit(limit)
+        .all()
+    ]
+
+
+def format_longest_career_actor(actor):
+    """
+    Format the longest career actor's details.
+
+    Args:
+        actor (Actor): The actor with the longest career span.
+
+    Returns:
+        dict: A dictionary containing the actor's details.
+    """
+
+    return (
+        {
+            "name": actor.name,
+            "career_span": actor.last_year - actor.first_year,
+            "from": actor.first_year,
+            "to": actor.last_year,
+            "id": actor.id,
+            "slug": actor.slug,
+            "photo_url": actor.photo_url,
+        }
+        if actor
+        else None
+    )
+
+
 def fetch_movie_stats():
     """
     Fetch statistics about movies
+
+    Returns:
+        dict: A dictionary containing various movie statistics.
     """
 
     try:
@@ -142,6 +224,35 @@ def fetch_movie_stats():
         return None
 
 
+def fetch_actor_stats():
+    """
+    Fetch statistics about actors.
+
+    Returns:
+        dict: A dictionary containing various actor statistics.
+    """
+
+    try:
+        career_spans = fetch_actor_career_spans()
+        longest_span_actor = (
+            max(
+                career_spans,
+                key=lambda x: (x.last_year or 0) - (x.first_year or 0),
+            )
+            if career_spans
+            else None
+        )
+
+        return {
+            "total": db.session.query(func.count(Actor.id)).scalar(),
+            "most_frequent_actors": fetch_most_frequent_actors(),
+            "longest_career_actor": format_longest_career_actor(longest_span_actor),
+        }
+    except Exception as e:
+        print(f"Error fetching actor stats: {e}", file=sys.stderr)
+        return None
+
+
 @stats.route("/stats", methods=["GET"])
 def get_stats():
     """Get statistics about movies, actors, genres, and directors in the database.
@@ -152,7 +263,7 @@ def get_stats():
     stats = dict()
 
     movie_stats = fetch_movie_stats()
-    actor_stats = dict()
+    actor_stats = fetch_actor_stats()
     director_stats = dict()
 
     if movie_stats:
@@ -161,6 +272,12 @@ def get_stats():
         stats["actor_stats"] = actor_stats
     if director_stats:
         stats["director_stats"] = director_stats
+
+    if not stats:
+        return {
+            **Status.ERROR.value,
+            "message": "Failed to fetch statistics",
+        }
 
     return {
         **Status.SUCCESS.value,
