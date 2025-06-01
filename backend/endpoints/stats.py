@@ -64,6 +64,35 @@ def fetch_top_rated_movies(limit: int = 10):
     ]
 
 
+def fetch_rating_distribution():
+    """
+    Fetch the distribution of movie ratings.
+
+    Returns:
+        dict: A dictionary with rating ranges as keys and counts as values.
+    """
+
+    bins = {
+        "<4": (0, 3.99),
+        "4-5.99": (4, 5.99),
+        "6-7.99": (6, 7.99),
+        "8-8.99": (8, 8.99),
+        "9+": (9, 10),
+    }
+
+    rating_distributions = dict()
+
+    for label, (low, high) in bins.items():
+        count = (
+            db.session.query(func.count(Movie.id))
+            .filter(Movie.rating.between(low, high))
+            .scalar()
+        )
+        rating_distributions[label] = count
+
+    return rating_distributions
+
+
 def fetch_length_brackets():
     """
     Fetch the distribution of movie durations in length brackets.
@@ -308,6 +337,71 @@ def fetch_popularity_over_time():
     return popularity_by_genre
 
 
+def fetch_popular_pairings(limit: int = 5) -> list:
+    """
+    Fetch pairs of actors and directors who have collaborated frequently.
+    This function retrieves the top actor-director pairs based on the number of collaborations.
+
+    Args:
+        limit (int): Number of top actor-director pairs to fetch. Defaults to 5.
+
+    Returns:
+        list: A list of tuples containing actor and director details along with their collaboration count.
+    """
+
+    actor_director_pairs = (
+        db.session.query(
+            Actor.id,
+            Actor.name,
+            Actor.photo_url,
+            Actor.slug,
+            Director.id,
+            Director.name,
+            Director.photo_url,
+            Director.slug,
+            func.count(Movie.id).label("collaborations"),
+        )
+        .join(movie_actors, Actor.id == movie_actors.c.actor_id)
+        .join(Movie, movie_actors.c.movie_id == Movie.id)
+        .join(movie_directors, Movie.id == movie_directors.c.movie_id)
+        .join(Director, movie_directors.c.director_id == Director.id)
+        .group_by(Actor.id, Director.id)
+        .order_by(func.count(Movie.id).desc())
+        .having(func.count(Movie.id) > 1)
+        .limit(limit)
+        .all()
+    )
+
+    return [
+        {
+            "actor": {
+                "id": actor_id,
+                "name": actor_name,
+                "photo_url": actor_photo_url,
+                "slug": actor_slug,
+            },
+            "director": {
+                "id": director_id,
+                "name": director_name,
+                "photo_url": director_photo_url,
+                "slug": director_slug,
+            },
+            "collaborations": collaborations,
+        }
+        for (
+            actor_id,
+            actor_name,
+            actor_photo_url,
+            actor_slug,
+            director_id,
+            director_name,
+            director_photo_url,
+            director_slug,
+            collaborations,
+        ) in actor_director_pairs
+    ]
+
+
 def fetch_movie_stats():
     """
     Fetch statistics about movies
@@ -341,6 +435,7 @@ def fetch_movie_stats():
                 .group_by(Movie.mpaa_rating)
                 .all()
             ),
+            "rating_distribution": fetch_rating_distribution(),
             "top_ratind_movies": fetch_top_rated_movies(),
             "length_brackets": fetch_length_brackets(),
             "average_rating_by_year": fetch_avg_rating_by_year(),
@@ -447,6 +542,7 @@ def get_stats():
     actor_stats = fetch_actor_stats()
     director_stats = fetch_director_stats()
     genre_stats = fetch_genre_stats()
+    collaborations = fetch_popular_pairings()
 
     if movie_stats:
         stats["movie_stats"] = movie_stats
@@ -456,6 +552,8 @@ def get_stats():
         stats["director_stats"] = director_stats
     if genre_stats:
         stats["genre_stats"] = genre_stats
+    if collaborations:
+        stats["collaborations"] = collaborations
 
     # if not stats were fetched return an error message
     if not stats:
